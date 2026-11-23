@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>풍선 터뜨리기 대결</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{display:flex;flex-direction:column;height:100dvh;overflow:hidden;user-select:none;-webkit-user-select:none;
+  font-family:"Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",sans-serif;color:#12304a;
+  background:linear-gradient(#bfe6ff,#e8f7ff)}
+header{display:grid;grid-template-columns:1fr auto 1fr;gap:clamp(6px,1.5vw,20px);padding:clamp(6px,1.5vw,16px);align-items:stretch}
+.team{background:#fff;border-radius:18px;text-align:center;padding:clamp(4px,1vw,12px);border:5px solid transparent;box-shadow:0 4px 12px rgba(0,60,120,.18)}
+.team h2{font-size:clamp(20px,4vw,40px)}
+.team .score{font-size:clamp(48px,11vw,120px);font-weight:900;line-height:1}
+.team .rounds{font-size:clamp(12px,2vw,22px);color:#58728a;font-weight:700}
+#teamA h2,#teamA .score{color:#d62839}
+#teamB h2,#teamB .score{color:#6a35c9}
+.team.active{transform:scale(1.04)}
+#teamA.active{border-color:#d62839;box-shadow:0 0 0 4px rgba(214,40,57,.25)}
+#teamB.active{border-color:#6a35c9;box-shadow:0 0 0 4px rgba(106,53,201,.25)}
+.center{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:clamp(110px,22vw,260px);text-align:center}
+#turnTxt{font-size:clamp(22px,4.6vw,52px);font-weight:900;line-height:1.1}
+#turnTxt.A{color:#d62839}#turnTxt.B{color:#6a35c9}
+#roundTxt{font-size:clamp(13px,2vw,22px);font-weight:700;color:#58728a}
+#time{font-size:clamp(40px,8vw,90px);font-weight:900;line-height:1.05}
+#time.low{color:#e63946;animation:pulse .5s infinite alternate}
+@keyframes pulse{to{transform:scale(1.15)}}
+.bar{display:flex;gap:10px;justify-content:center;padding:0 10px 8px}
+.btn{font:inherit;font-weight:900;font-size:clamp(16px,2.6vw,26px);padding:.5em 1.2em;border:0;border-radius:999px;
+  background:#ff9f1c;color:#fff;box-shadow:0 4px 0 #c97800;cursor:pointer}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #c97800}
+.btn:disabled{background:#b7c4cf;box-shadow:0 4px 0 #8fa0ae;cursor:default}
+.btn.sub{background:#4a90d9;box-shadow:0 4px 0 #2d6aa8}
+#area{position:relative;flex:1;min-height:0;overflow:hidden;touch-action:none;
+  background:linear-gradient(#9fd8ff,#d9f1ff 70%,#fff)}
+.balloon{position:absolute;cursor:pointer;background-color:var(--c);
+  background-image:radial-gradient(circle at 30% 25%,rgba(255,255,255,.4),rgba(255,255,255,0) 55%);
+  border-radius:50% 50% 48% 48%/58% 58% 42% 42%;box-shadow:inset -8px -10px 0 rgba(0,0,0,.13);will-change:transform}
+.balloon::before{content:"";position:absolute;inset:-12px}
+.balloon .knot{position:absolute;left:50%;bottom:-9px;transform:translateX(-50%);width:0;height:0;
+  border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:11px solid var(--c);pointer-events:none}
+.balloon .str{position:absolute;left:50%;top:100%;width:2px;height:44px;margin-top:2px;background:rgba(0,0,0,.35);pointer-events:none}
+.balloon .pt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-weight:900;color:rgba(255,255,255,.9);font-size:22px;pointer-events:none;text-shadow:0 1px 2px rgba(0,0,0,.3)}
+.piece,.plus{position:absolute;pointer-events:none;z-index:5}
+.piece{border-radius:3px}
+.plus{font-weight:900;font-size:36px;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.35),0 0 8px rgba(0,0,0,.25)}
+#overlay{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:rgba(190,230,255,.82);padding:14px}
+#overlay.hide{display:none}
+.card{background:#fff;border-radius:28px;padding:clamp(18px,4vw,44px);text-align:center;max-width:900px;width:100%;box-shadow:0 10px 30px rgba(0,60,120,.3)}
+.card h1{font-size:clamp(30px,6.5vw,72px);line-height:1.15;margin-bottom:.3em}
+.card p{font-size:clamp(18px,3vw,34px);font-weight:700;margin-bottom:.8em;line-height:1.4}
+.card .btn{font-size:clamp(22px,4vw,42px)}
+.final{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:0 0 .6em}
+.final div{border-radius:18px;padding:10px;background:#f1f8ff;font-size:clamp(18px,3.4vw,36px);font-weight:900}
+.final b{display:block;font-size:clamp(46px,11vw,110px);line-height:1.1}
+.final .a{color:#d62839}.final .b{color:#6a35c9}
+.final .win{outline:6px solid #ffb703;background:#fff8dc}
+.winner{font-size:clamp(34px,8vw,88px);font-weight:900;margin-bottom:.4em;color:#e07a00}
+</style>
+</head>
+<body>
+<header>
+  <div class="team" id="teamA"><h2>A팀</h2><div class="score" id="sA">0</div><div class="rounds" id="rA"></div></div>
+  <div class="center">
+    <div id="turnTxt">준비</div>
+    <div id="roundTxt">&nbsp;</div>
+    <div id="time">30</div>
+  </div>
+  <div class="team" id="teamB"><h2>B팀</h2><div class="score" id="sB">0</div><div class="rounds" id="rB"></div></div>
+</header>
+<div class="bar">
+  <button class="btn" id="startBtn">시작</button>
+  <button class="btn sub" id="resetBtn">다시 하기</button>
+  <button class="btn sub" id="muteBtn">🔊 소리 끄기</button>
+</div>
+<div id="area"></div>
+
+<div id="overlay">
+  <div class="card">
+    <h1 id="ovTitle"></h1>
+    <div id="ovBody"></div>
+    <button class="btn" id="ovBtn"></button>
+  </div>
+</div>
+
+<script>
+// ===== 바꿔 볼 수 있는 설정 =====
+const CFG = {
+  TURN_SECONDS: 30,                       // 차례당 시간(초)
+  SPAWN_START: 900, SPAWN_END: 350,       // 풍선 나오는 간격(ms): 차례 시작 → 끝
+  RISE_START: 7000, RISE_END: 4000,       // 풍선이 떠오르는 시간(ms): 짧을수록 빠름
+  POINTS: { big: 1, mid: 2, small: 3 },   // 점수: 큰 / 중간 / 작은 풍선
+  SIZES:  { big: 100, mid: 80, small: 62 } // 풍선 너비(px)
+};
+const ORDER = ['A','B','A','B'];
+const COLORS = ['#ff3b3b','#ff8c1a','#ffd400','#2ecc71','#9b59ff','#ff5fa2','#00b894'];
+
+const $ = id => document.getElementById(id);
+const area = $('area');
+let turn = -1, phase = 'idle', running = false, turnScore = 0, turnStart = 0, nextSpawn = 0, raf = 0;
+const total = {A:0,B:0}, rounds = {A:[],B:[]};
+
+/* ---------- 소리 (Web Audio API) ---------- */
+let ac = null, muted = false;
+function audio(){
+  if(!ac){ try{ ac = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
+  if(ac && ac.state === 'suspended') ac.resume();
+  return ac;
+}
+function tone(freq, dur, type='sine', vol=.22, delay=0, slideTo){
+  if(muted) return;
+  const a = audio(); if(!a) return;
+  const t = a.currentTime + delay, o = a.createOscillator(), g = a.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  if(slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t+dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t+dur);
+  o.connect(g); g.connect(a.destination); o.start(t); o.stop(t+dur+.03);
+}
+const sfx = {
+  pop: p => { tone(350+p*220, .12, 'triangle', .28, 0, 90); tone(900+p*300, .05, 'square', .08); },
+  start: () => [523,659,784].forEach((f,i)=>tone(f,.15,'triangle',.22,i*.1)),
+  end: () => [784,659,523].forEach((f,i)=>tone(f,.2,'sine',.25,i*.14)),
+  win: () => [523,659,784,1047,784,1047].forEach((f,i)=>tone(f,.22,'triangle',.25,i*.13))
+};
+$('muteBtn').onclick = () => {
+  muted = !muted;
+  $('muteBtn').textContent = muted ? '🔇 소리 켜기' : '🔊 소리 끄기';
+  if(!muted) tone(660,.1);
+};
+
+/* ---------- 화면 갱신 ---------- */
+function render(){
+  for(const t of ['A','B']){
+    const live = total[t] + (running && ORDER[turn]===t ? turnScore : 0);
+    $('s'+t).textContent = live;
+    $('r'+t).textContent = [0,1].map(i => (i+1)+'차 '+(rounds[t][i]===undefined?'-':rounds[t][i])).join(' · ');
+    $('team'+t).classList.toggle('active', phase==='play' && ORDER[turn]===t);
+  }
+  const tt = $('turnTxt');
+  if(phase==='play'){ tt.textContent = ORDER[turn]+'팀 차례'; tt.className = ORDER[turn]; $('roundTxt').textContent = (turn+1)+' / 4 차례'; }
+  else if(phase==='between'){ tt.textContent = '잠깐 휴식'; tt.className=''; $('roundTxt').textContent = (turn+1)+' / 4 차례 끝'; }
+  else if(phase==='done'){ tt.textContent = '게임 종료'; tt.className=''; $('roundTxt').textContent = '4 / 4 차례 끝'; }
+  else { tt.textContent = '준비'; tt.className=''; $('roundTxt').innerHTML = '&nbsp;'; }
+  $('startBtn').disabled = !(phase==='idle' || phase==='between');
+}
+function setTime(sec){
+  $('time').textContent = sec;
+  $('time').classList.toggle('low', running && sec <= 5);
+}
+function showOverlay(title, body, btnText){
+  $('ovTitle').innerHTML = title; $('ovBody').innerHTML = body;
+  const b = $('ovBtn'); b.textContent = btnText || ''; b.style.display = btnText ? '' : 'none';
+  $('overlay').classList.remove('hide');
+}
+
+/* ---------- 진행 ---------- */
+function next(){ if(phase==='idle' || phase==='between') startTurn(turn+1); }
+function startTurn(i){
+  audio();
+  turn = i; phase = 'play'; running = true; turnScore = 0;
+  $('overlay').classList.add('hide');
+  turnStart = performance.now(); nextSpawn = turnStart + 200;
+  setTime(CFG.TURN_SECONDS); render(); sfx.start();
+  raf = requestAnimationFrame(loop);
+}
+function loop(now){
+  if(!running) return;
+  const elapsed = now - turnStart, total_ms = CFG.TURN_SECONDS*1000;
+  if(elapsed >= total_ms){ endTurn(); return; }
+  setTime(Math.ceil((total_ms-elapsed)/1000));
+  if(now >= nextSpawn){
+    const p = elapsed/total_ms;
+    spawn(p);
+    nextSpawn = now + (CFG.SPAWN_START + (CFG.SPAWN_END-CFG.SPAWN_START)*p) * (0.8+Math.random()*0.4);
+  }
+  raf = requestAnimationFrame(loop);
+}
+function endTurn(){
+  running = false; cancelAnimationFrame(raf); clearBalloons(); setTime(0);
+  const t = ORDER[turn];
+  total[t] += turnScore; rounds[t].push(turnScore);
+  if(turn < 3){
+    phase = 'between'; render(); sfx.end();
+    const nx = ORDER[turn+1];
+    showOverlay(`${t}팀 끝!<br>${nx}팀 차례입니다`,
+      `<p>이번 차례 <b>+${turnScore}</b>점 · ${t}팀 합계 <b>${total[t]}</b>점</p>`, `${nx}팀 시작 ▶`);
+  } else {
+    phase = 'done'; render(); sfx.win();
+    const a = total.A, b = total.B;
+    const win = a>b ? '🏆 A팀 승리!' : b>a ? '🏆 B팀 승리!' : '🤝 무승부';
+    showOverlay('최종 결과',
+      `<div class="final"><div class="a ${a>b?'win':''}">A팀 합계<b>${a}</b></div><div class="b ${b>a?'win':''}">B팀 합계<b>${b}</b></div></div>
+       <div class="winner">${win}</div>`, '다시 하기');
+  }
+}
+function resetGame(){
+  running = false; cancelAnimationFrame(raf); clearBalloons();
+  turn = -1; phase = 'idle'; turnScore = 0;
+  total.A = total.B = 0; rounds.A = []; rounds.B = [];
+  setTime(CFG.TURN_SECONDS); render();
+  showStart();
+}
+function showStart(){
+  showOverlay('🎈 풍선 터뜨리기 대결',
+    '<p>A팀 → B팀 → A팀 → B팀, 차례마다 '+CFG.TURN_SECONDS+'초!<br>작은 풍선일수록 높은 점수 (1 · 2 · 3점)</p>', 'A팀 시작 ▶');
+}
+
+/* ---------- 풍선 ---------- */
+function clearBalloons(){
+  area.querySelectorAll('.balloon').forEach(b => { if(b._anim) b._anim.cancel(); b.remove(); });
+}
+function spawn(p){
+  const r = Math.random();
+  const kind = r < .4 ? 'big' : r < .75 ? 'mid' : 'small';
+  const w = CFG.SIZES[kind], h = w*1.2, pts = CFG.POINTS[kind];
+  const W = area.clientWidth, H = area.clientHeight;
+  const color = COLORS[Math.floor(Math.random()*COLORS.length)];
+  const el = document.createElement('div');
+  el.className = 'balloon';
+  el.style.cssText = `width:${w}px;height:${h}px;left:${Math.random()*Math.max(10,W-w)}px;top:${H}px;--c:${color}`;
+  el.innerHTML = `<i class="knot"></i><i class="str"></i><span class="pt">${pts}</span>`;
+  el._pts = pts; el._color = color;
+  const travel = H + h + 60, dx = (Math.random()-.5)*70;
+  const rise = CFG.RISE_START + (CFG.RISE_END-CFG.RISE_START)*p;
+  el._anim = el.animate([
+    {transform:'translate(0,0)'},
+    {transform:`translate(${dx}px,${-travel*.5}px)`},
+    {transform:`translate(0,${-travel}px)`}
+  ], {duration: rise*(0.9+Math.random()*0.2), easing:'linear', fill:'forwards'});
+  el._anim.onfinish = () => el.remove();
+  el.addEventListener('pointerdown', e => { e.preventDefault(); pop(el); });
+  area.appendChild(el);
+}
+function pop(el){
+  if(!running || el._popped) return;
+  el._popped = true;
+  const rect = el.getBoundingClientRect(), ar = area.getBoundingClientRect();
+  const cx = rect.left - ar.left + rect.width/2, cy = rect.top - ar.top + rect.height/2;
+  const pts = el._pts, color = el._color;
+  if(el._anim) el._anim.cancel();
+  el.remove();
+  turnScore += pts; render(); sfx.pop(pts);
+  // 색색 조각
+  for(let i=0;i<16;i++){
+    const s = 7 + Math.random()*9, d = document.createElement('div');
+    d.className = 'piece';
+    d.style.cssText = `width:${s}px;height:${s}px;left:${cx}px;top:${cy}px;background:${Math.random()<.65?color:COLORS[Math.floor(Math.random()*COLORS.length)]}`;
+    area.appendChild(d);
+    const ang = Math.random()*Math.PI*2, dist = 50 + Math.random()*100;
+    const x = Math.cos(ang)*dist, y = Math.sin(ang)*dist;
+    const a = d.animate([
+      {transform:'translate(0,0) rotate(0)', opacity:1},
+      {transform:`translate(${x}px,${y+40}px) rotate(${Math.random()*540}deg)`, opacity:0}
+    ], {duration: 500+Math.random()*400, easing:'cubic-bezier(.2,.7,.4,1)'});
+    a.onfinish = () => d.remove();
+  }
+  // +점수
+  const pl = document.createElement('div');
+  pl.className = 'plus'; pl.textContent = '+'+pts;
+  pl.style.cssText = `left:${cx-18}px;top:${cy-20}px`;
+  area.appendChild(pl);
+  const pa = pl.animate([{transform:'translateY(0) scale(.6)',opacity:1},{transform:'translateY(-60px) scale(1.2)',opacity:0}], {duration:700, easing:'ease-out'});
+  pa.onfinish = () => pl.remove();
+}
+
+/* ---------- 버튼 ---------- */
+$('startBtn').onclick = next;
+$('ovBtn').onclick = () => { if(phase==='done') resetGame(); else next(); };
+$('resetBtn').onclick = resetGame;
+window.addEventListener('resize', () => {}); // 크기 변화는 풍선이 나올 때마다 새로 계산됩니다
+resetGame();
+</script>
+</body>
+</html>
